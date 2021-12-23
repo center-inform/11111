@@ -1,0 +1,186 @@
+"apiVersion": "helm.fluxcd.io/v1"
+"kind": "HelmRelease"
+"metadata":
+  "name": "postgres-exporter-rds-stage-dbwave"
+  "namespace": "monitoring"
+"spec":
+  "chart":
+    "name": "prometheus-postgres-exporter"
+    "repository": "https://prometheus-community.github.io/helm-charts"
+    "version": "2.3.7"
+  "releaseName": "postgres-exporter-rds-stage-dbwave"
+  "values":
+    "annotations":
+      "vault.security.banzaicloud.io/vault-addr": "https://vault.zvq.me"
+      "vault.security.banzaicloud.io/vault-path": "kubernetes-infra"
+      "vault.security.banzaicloud.io/vault-role": "monitoring"
+      "vault.security.banzaicloud.io/vault-serviceaccount": "default"
+      "vault.security.banzaicloud.io/vault-skip-verify": "true"
+    "config":
+      "datasource":
+        "[password]": ""
+        "database": "postgres"
+        "host": ""
+        "password": "${vault:stage/data/rds/rds-stage-dbwave#password}"
+        "port": "5555"
+        "sslmode": "disable"
+        "user": ""
+      "queries": "pg_repl_lag_bytes:\n  query: \"select * from (SELECT pg_wal_lsn_diff(s.sent_lsn,s.replay_lsn)\
+        \ AS byte_lag, client_addr from pg_stat_replication s) tab1 where byte_lag\
+        \ is not null\"\n  master: true\n  metrics:\n    - byte_lag:\n        usage:\
+        \ \"GAUGE\"\n        description: \"Replication lag behind master in bytes\"\
+        \n    - client_addr:\n        usage: \"LABEL\"\n        description: \"Name\
+        \ of the client_addr\"\npg_replication:\n  query: \"SELECT CASE WHEN NOT pg_is_in_recovery()\
+        \ THEN 0 ELSE GREATEST (0, EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp())))\
+        \ END AS lag\"\n  master: true\n  metrics:\n    - lag:\n        usage: \"\
+        GAUGE\"\n        description: \"Replication lag behind master in seconds\"\
+        \npg_postmaster:\n  query: \"SELECT pg_postmaster_start_time as start_time_seconds\
+        \ from pg_postmaster_start_time()\"\n  master: true\n  metrics:\n    - start_time_seconds:\n\
+        \        usage: \"GAUGE\"\n        description: \"Time at which postmaster\
+        \ started\"\npg_stat_user_tables:\n  query: |\n   SELECT\n     current_database()\
+        \ datname,\n     schemaname,\n     relname,\n     seq_scan,\n     seq_tup_read,\n\
+        \     idx_scan,\n     idx_tup_fetch,\n     n_tup_ins,\n     n_tup_upd,\n \
+        \    n_tup_del,\n     n_tup_hot_upd,\n     n_live_tup,\n     n_dead_tup,\n\
+        \     n_mod_since_analyze,\n     COALESCE(last_vacuum, '1970-01-01Z') as last_vacuum,\n\
+        \     COALESCE(last_autovacuum, '1970-01-01Z') as last_autovacuum,\n     COALESCE(last_analyze,\
+        \ '1970-01-01Z') as last_analyze,\n     COALESCE(last_autoanalyze, '1970-01-01Z')\
+        \ as last_autoanalyze,\n     vacuum_count,\n     autovacuum_count,\n     analyze_count,\n\
+        \     autoanalyze_count\n   FROM\n     pg_stat_user_tables\n  metrics:\n \
+        \   - datname:\n        usage: \"LABEL\"\n        description: \"Name of current\
+        \ database\"\n    - schemaname:\n        usage: \"LABEL\"\n        description:\
+        \ \"Name of the schema that this table is in\"\n    - relname:\n        usage:\
+        \ \"LABEL\"\n        description: \"Name of this table\"\n    - seq_scan:\n\
+        \        usage: \"COUNTER\"\n        description: \"Number of sequential scans\
+        \ initiated on this table\"\n    - seq_tup_read:\n        usage: \"COUNTER\"\
+        \n        description: \"Number of live rows fetched by sequential scans\"\
+        \n    - idx_scan:\n        usage: \"COUNTER\"\n        description: \"Number\
+        \ of index scans initiated on this table\"\n    - idx_tup_fetch:\n       \
+        \ usage: \"COUNTER\"\n        description: \"Number of live rows fetched by\
+        \ index scans\"\n    - n_tup_ins:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Number of rows inserted\"\n    - n_tup_upd:\n        usage: \"COUNTER\"\
+        \n        description: \"Number of rows updated\"\n    - n_tup_del:\n    \
+        \    usage: \"COUNTER\"\n        description: \"Number of rows deleted\"\n\
+        \    - n_tup_hot_upd:\n        usage: \"COUNTER\"\n        description: \"\
+        Number of rows HOT updated (i.e., with no separate index update required)\"\
+        \n    - n_live_tup:\n        usage: \"GAUGE\"\n        description: \"Estimated\
+        \ number of live rows\"\n    - n_dead_tup:\n        usage: \"GAUGE\"\n   \
+        \     description: \"Estimated number of dead rows\"\n    - n_mod_since_analyze:\n\
+        \        usage: \"GAUGE\"\n        description: \"Estimated number of rows\
+        \ changed since last analyze\"\n    - last_vacuum:\n        usage: \"GAUGE\"\
+        \n        description: \"Last time at which this table was manually vacuumed\
+        \ (not counting VACUUM FULL)\"\n    - last_autovacuum:\n        usage: \"\
+        GAUGE\"\n        description: \"Last time at which this table was vacuumed\
+        \ by the autovacuum daemon\"\n    - last_analyze:\n        usage: \"GAUGE\"\
+        \n        description: \"Last time at which this table was manually analyzed\"\
+        \n    - last_autoanalyze:\n        usage: \"GAUGE\"\n        description:\
+        \ \"Last time at which this table was analyzed by the autovacuum daemon\"\n\
+        \    - vacuum_count:\n        usage: \"COUNTER\"\n        description: \"\
+        Number of times this table has been manually vacuumed (not counting VACUUM\
+        \ FULL)\"\n    - autovacuum_count:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Number of times this table has been vacuumed by the autovacuum daemon\"\
+        \n    - analyze_count:\n        usage: \"COUNTER\"\n        description: \"\
+        Number of times this table has been manually analyzed\"\n    - autoanalyze_count:\n\
+        \        usage: \"COUNTER\"\n        description: \"Number of times this table\
+        \ has been analyzed by the autovacuum daemon\"\npg_statio_user_tables:\n \
+        \ query: \"SELECT current_database() datname, schemaname, relname, heap_blks_read,\
+        \ heap_blks_hit, idx_blks_read, idx_blks_hit, toast_blks_read, toast_blks_hit,\
+        \ tidx_blks_read, tidx_blks_hit FROM pg_statio_user_tables\"\n  metrics:\n\
+        \    - datname:\n        usage: \"LABEL\"\n        description: \"Name of\
+        \ current database\"\n    - schemaname:\n        usage: \"LABEL\"\n      \
+        \  description: \"Name of the schema that this table is in\"\n    - relname:\n\
+        \        usage: \"LABEL\"\n        description: \"Name of this table\"\n \
+        \   - heap_blks_read:\n        usage: \"COUNTER\"\n        description: \"\
+        Number of disk blocks read from this table\"\n    - heap_blks_hit:\n     \
+        \   usage: \"COUNTER\"\n        description: \"Number of buffer hits in this\
+        \ table\"\n    - idx_blks_read:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Number of disk blocks read from all indexes on this table\"\n    - idx_blks_hit:\n\
+        \        usage: \"COUNTER\"\n        description: \"Number of buffer hits\
+        \ in all indexes on this table\"\n    - toast_blks_read:\n        usage: \"\
+        COUNTER\"\n        description: \"Number of disk blocks read from this table's\
+        \ TOAST table (if any)\"\n    - toast_blks_hit:\n        usage: \"COUNTER\"\
+        \n        description: \"Number of buffer hits in this table's TOAST table\
+        \ (if any)\"\n    - tidx_blks_read:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Number of disk blocks read from this table's TOAST table indexes (if any)\"\
+        \n    - tidx_blks_hit:\n        usage: \"COUNTER\"\n        description: \"\
+        Number of buffer hits in this table's TOAST table indexes (if any)\"\npg_database:\n\
+        \  query: \"SELECT pg_database.datname, pg_database_size(pg_database.datname)\
+        \ as size_bytes FROM pg_database\"\n  master: true\n  cache_seconds: 30\n\
+        \  metrics:\n    - datname:\n        usage: \"LABEL\"\n        description:\
+        \ \"Name of the database\"\n    - size_bytes:\n        usage: \"GAUGE\"\n\
+        \        description: \"Disk space used by the database\"\npg_stat_statements:\n\
+        \  query: \"SELECT t2.rolname, t3.datname, queryid, calls, total_time / 1000\
+        \ as total_time_seconds, min_time / 1000 as min_time_seconds, max_time / 1000\
+        \ as max_time_seconds, mean_time / 1000 as mean_time_seconds, stddev_time\
+        \ / 1000 as stddev_time_seconds, rows, shared_blks_hit, shared_blks_read,\
+        \ shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read,\
+        \ local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written,\
+        \ blk_read_time / 1000 as blk_read_time_seconds, blk_write_time / 1000 as\
+        \ blk_write_time_seconds FROM pg_stat_statements t1 JOIN pg_roles t2 ON (t1.userid=t2.oid)\
+        \ JOIN pg_database t3 ON (t1.dbid=t3.oid) WHERE t2.rolname != 'rdsadmin' AND\
+        \ queryid IS NOT NULL\"\n  master: true\n  metrics:\n    - rolname:\n    \
+        \    usage: \"LABEL\"\n        description: \"Name of user\"\n    - datname:\n\
+        \        usage: \"LABEL\"\n        description: \"Name of database\"\n   \
+        \ - queryid:\n        usage: \"LABEL\"\n        description: \"Query ID\"\n\
+        \    - calls:\n        usage: \"COUNTER\"\n        description: \"Number of\
+        \ times executed\"\n    - total_time_seconds:\n        usage: \"COUNTER\"\n\
+        \        description: \"Total time spent in the statement, in milliseconds\"\
+        \n    - min_time_seconds:\n        usage: \"GAUGE\"\n        description:\
+        \ \"Minimum time spent in the statement, in milliseconds\"\n    - max_time_seconds:\n\
+        \        usage: \"GAUGE\"\n        description: \"Maximum time spent in the\
+        \ statement, in milliseconds\"\n    - mean_time_seconds:\n        usage: \"\
+        GAUGE\"\n        description: \"Mean time spent in the statement, in milliseconds\"\
+        \n    - stddev_time_seconds:\n        usage: \"GAUGE\"\n        description:\
+        \ \"Population standard deviation of time spent in the statement, in milliseconds\"\
+        \n    - rows:\n        usage: \"COUNTER\"\n        description: \"Total number\
+        \ of rows retrieved or affected by the statement\"\n    - shared_blks_hit:\n\
+        \        usage: \"COUNTER\"\n        description: \"Total number of shared\
+        \ block cache hits by the statement\"\n    - shared_blks_read:\n        usage:\
+        \ \"COUNTER\"\n        description: \"Total number of shared blocks read by\
+        \ the statement\"\n    - shared_blks_dirtied:\n        usage: \"COUNTER\"\n\
+        \        description: \"Total number of shared blocks dirtied by the statement\"\
+        \n    - shared_blks_written:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Total number of shared blocks written by the statement\"\n    - local_blks_hit:\n\
+        \        usage: \"COUNTER\"\n        description: \"Total number of local\
+        \ block cache hits by the statement\"\n    - local_blks_read:\n        usage:\
+        \ \"COUNTER\"\n        description: \"Total number of local blocks read by\
+        \ the statement\"\n    - local_blks_dirtied:\n        usage: \"COUNTER\"\n\
+        \        description: \"Total number of local blocks dirtied by the statement\"\
+        \n    - local_blks_written:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Total number of local blocks written by the statement\"\n    - temp_blks_read:\n\
+        \        usage: \"COUNTER\"\n        description: \"Total number of temp blocks\
+        \ read by the statement\"\n    - temp_blks_written:\n        usage: \"COUNTER\"\
+        \n        description: \"Total number of temp blocks written by the statement\"\
+        \n    - blk_read_time_seconds:\n        usage: \"COUNTER\"\n        description:\
+        \ \"Total time the statement spent reading blocks, in milliseconds (if track_io_timing\
+        \ is enabled, otherwise zero)\"\n    - blk_write_time_seconds:\n        usage:\
+        \ \"COUNTER\"\n        description: \"Total time the statement spent writing\
+        \ blocks, in milliseconds (if track_io_timing is enabled, otherwise zero)\"\
+        \npg_stat_activity_idle:\n  query: |\n    WITH\n      metrics AS (\n     \
+        \   SELECT\n          application_name,\n          SUM(EXTRACT(EPOCH FROM\
+        \ (CURRENT_TIMESTAMP - state_change))::bigint)::float AS process_seconds_sum,\n\
+        \          COUNT(*) AS process_seconds_count\n        FROM pg_stat_activity\n\
+        \        WHERE state = 'idle'\n        GROUP BY application_name\n      ),\n\
+        \      buckets AS (\n        SELECT\n          application_name,\n       \
+        \   le,\n          SUM(\n            CASE WHEN EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP\
+        \ - state_change)) <= le\n              THEN 1\n              ELSE 0\n   \
+        \         END\n          )::bigint AS bucket\n        FROM\n          pg_stat_activity,\n\
+        \          UNNEST(ARRAY[1, 2, 5, 15, 30, 60, 90, 120, 300]) AS le\n      \
+        \  GROUP BY application_name, le\n        ORDER BY application_name, le\n\
+        \      )\n    SELECT\n      application_name,\n      process_seconds_sum,\n\
+        \      process_seconds_count,\n      ARRAY_AGG(le) AS process_seconds,\n \
+        \     ARRAY_AGG(bucket) AS process_seconds_bucket\n    FROM metrics JOIN buckets\
+        \ USING (application_name)\n    GROUP BY 1, 2, 3\n  metrics:\n    - application_name:\n\
+        \        usage: \"LABEL\"\n        description: \"Application Name\"\n   \
+        \ - process_seconds:\n        usage: \"HISTOGRAM\"\n        description: \"\
+        Idle time of server processes\""
+    "serviceAccount":
+      "create": !!bool "false"
+    "serviceMonitor":
+      "enabled": !!bool "true"
+      "metricRelabelings":
+      - "[replacement]": ""
+        "replacement": "10.16.0.58"
+        "targetLabel": "instance"
+      - "[replacement]": ""
+        "replacement": "stage-dbwave"
+        "targetLabel": "service"
