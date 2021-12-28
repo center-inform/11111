@@ -1,0 +1,38 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: postgres-exporter-rds-stage-dbdrrf
+  namespace: monitoring
+spec:
+  chart:
+    name: prometheus-postgres-exporter
+    repository: https://prometheus-community.github.io/helm-charts
+    version: 2.3.7
+  releaseName: postgres-exporter-rds-stage-dbdrrf
+  values:
+    annotations:
+      vault.security.banzaicloud.io/vault-addr: https://vault.zvq.me
+      vault.security.banzaicloud.io/vault-path: kubernetes-infra
+      vault.security.banzaicloud.io/vault-role: monitoring
+      vault.security.banzaicloud.io/vault-serviceaccount: default
+      vault.security.banzaicloud.io/vault-skip-verify: 'true'
+    config:
+      datasource:
+        '[password]': '444'
+        database: postgres
+        host: '111'
+        password: ${vault:stage/data/rds/rds-stage-dbdrrf#password}
+        port: '222'
+        sslmode: disable
+        user: '333'
+    serviceAccount:
+      create: false
+    serviceMonitor:
+      enabled: true
+      metricRelabelings:
+      - '[replacement]': '555'
+        replacement: 10.16.0.69
+        targetLabel: instance
+      - '[replacement]': '666'
+        replacement: stage-dbdrrf
+        targetLabel: service
