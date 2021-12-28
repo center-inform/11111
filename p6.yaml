@@ -1,0 +1,38 @@
+apiVersion: helm.fluxcd.io/v1
+kind: HelmRelease
+metadata:
+  name: postgres-exporter-rds-prod-dbwave
+  namespace: monitoring
+spec:
+  chart:
+    name: prometheus-postgres-exporter
+    repository: https://prometheus-community.github.io/helm-charts
+    version: 2.3.7
+  releaseName: postgres-exporter-rds-prod-dbwave
+  values:
+    annotations:
+      vault.security.banzaicloud.io/vault-addr: https://vault.zvq.me
+      vault.security.banzaicloud.io/vault-path: kubernetes-infra
+      vault.security.banzaicloud.io/vault-role: monitoring
+      vault.security.banzaicloud.io/vault-serviceaccount: default
+      vault.security.banzaicloud.io/vault-skip-verify: 'true'
+    config:
+      datasource:
+        '[password]': pass1
+        database: postgres
+        host: yandex.ru
+        password: pass1
+        port: '5124'
+        sslmode: disable
+        user: user
+    serviceAccount:
+      create: false
+    serviceMonitor:
+      enabled: true
+      metricRelabelings:
+      - '[replacement]': label1
+        replacement: label1
+        targetLabel: instance
+      - '[replacement]': label2
+        replacement: label2
+        targetLabel: service
