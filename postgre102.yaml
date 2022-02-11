@@ -20,7 +20,7 @@ spec:
       datasource:
         '[password]': ''
         database: postgres
-        host: ''
+        host: '22'
         password: pass1
         port: '5555'
         sslmode: disable
